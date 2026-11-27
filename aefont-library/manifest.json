@@ -1,0 +1,47 @@
+{
+  "formatVersion": 1,
+  "libraryName": "aefont-library",
+  "units": "mm",
+  "referenceHeight": 1.0,
+  "referenceRule": "boundingBoxHeight",
+  "defaultLetterSpacing": 0.0,
+  "glyphDirectory": "glyphs",
+  "glyphs": {
+    "A": {
+      "file": "A.svg",
+      "width": 0.72,
+      "height": 1.0,
+      "advance": 0.80,
+      "bbox": {
+        "minX": 0.0,
+        "minY": 0.0,
+        "maxX": 0.72,
+        "maxY": 1.0
+      }
+    },
+    "1": {
+      "file": "1.svg",
+      "width": 0.42,
+      "height": 1.0,
+      "advance": 0.50,
+      "bbox": {
+        "minX": 0.0,
+        "minY": 0.0,
+        "maxX": 0.42,
+        "maxY": 1.0
+      }
+    },
+    "+": {
+      "file": "plus.svg",
+      "width": 0.60,
+      "height": 1.0,
+      "advance": 0.68,
+      "bbox": {
+        "minX": 0.0,
+        "minY": 0.0,
+        "maxX": 0.60,
+        "maxY": 1.0
+      }
+    }
+  }
+}
