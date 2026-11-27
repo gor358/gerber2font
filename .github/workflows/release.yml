@@ -1,0 +1,103 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    env:
+      PYTHON_VERSION: "3.11"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive version and paths from tag
+        shell: powershell
+        run: |
+          $tag = "${env:GITHUB_REF_NAME}"
+          if (-not $tag) {
+            throw "GITHUB_REF_NAME is empty."
+          }
+
+          if ($tag -notmatch '^v(.+)$') {
+            throw "Tag must match v<version>, for example v1.0.0"
+          }
+
+          $version = $Matches[1]
+
+          "APP_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "INSTALLER_BASENAME=gerber2font-setup-$version-win-x64.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BLOB_VERSION_PATH=$tag/gerber2font-setup-$version-win-x64.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "BLOB_LATEST_PATH=latest/gerber2font-setup-win-x64.exe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: x64
+
+      - name: Install Inno Setup 6
+        shell: powershell
+        run: |
+          choco install innosetup --no-progress -y
+          if (-not (Test-Path "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe")) {
+            throw "Inno Setup 6 install failed or ISCC.exe not found."
+          }
+
+      - name: Build installer
+        shell: powershell
+        run: |
+          ./build.ps1 -Version "${env:APP_VERSION}"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Upload installer to Azure Blob Storage
+        shell: powershell
+        run: |
+          $file = Join-Path $PWD "output\${env:INSTALLER_BASENAME}"
+          if (-not (Test-Path $file)) {
+            throw "Installer not found: $file"
+          }
+
+          az storage blob upload `
+            --auth-mode login `
+            --account-name "${{ secrets.AZURE_STORAGE_ACCOUNT }}" `
+            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" `
+            --name "${env:BLOB_VERSION_PATH}" `
+            --file "$file" `
+            --overwrite true
+
+          az storage blob upload `
+            --auth-mode login `
+            --account-name "${{ secrets.AZURE_STORAGE_ACCOUNT }}" `
+            --container-name "${{ secrets.AZURE_STORAGE_CONTAINER }}" `
+            --name "${env:BLOB_LATEST_PATH}" `
+            --file "$file" `
+            --overwrite true
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gerber2font-installer
+          path: output/*.exe
+          if-no-files-found: error
+
+      - name: Publish GitHub release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: output/*.exe
+          generate_release_notes: true
