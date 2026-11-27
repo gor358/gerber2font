@@ -21,11 +21,15 @@ function Require-Command($Name) {
 function Resolve-Iscc {
     $candidates = @(
         (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"),
-        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe")
-    ) | Where-Object { $_ -and (Test-Path $_) }
+        (Join-Path $env:ProgramFiles "Inno Setup 6\ISCC.exe"),
+        (Join-Path ${env:ProgramFiles(x86)} "Inno Setup 7\ISCC.exe"),
+        (Join-Path $env:ProgramFiles "Inno Setup 7\ISCC.exe")
+    )
 
-    if ($candidates.Count -gt 0) {
-        return $candidates[0]
+    foreach ($candidate in $candidates) {
+        if ($candidate -and (Test-Path $candidate)) {
+            return $candidate
+        }
     }
 
     $cmd = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
@@ -33,7 +37,7 @@ function Resolve-Iscc {
         return $cmd.Source
     }
 
-    Fail "ISCC.exe not found. Install Inno Setup 6 or add ISCC.exe to PATH."
+    Fail "ISCC.exe not found. Install Inno Setup or add ISCC.exe to PATH."
 }
 
 function Invoke-Step([string]$Label, [scriptblock]$Action) {

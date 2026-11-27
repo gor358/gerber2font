@@ -3,7 +3,7 @@
 from pathlib import Path
 from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 
-project_root = Path(__file__).resolve().parent
+project_root = Path.cwd()
 
 shapely_hiddenimports = collect_submodules("shapely")
 shapely_binaries = collect_dynamic_libs("shapely")

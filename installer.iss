@@ -104,35 +104,49 @@ end;
 
 function PathContainsDir(PathValue, DirValue: string): Boolean;
 var
-  NormalizedPath: string;
-  Needle: string;
+  PaddedPath: string;
+  PaddedDir: string;
 begin
-  NormalizedPath := ';' + Uppercase(PathValue) + ';';
-  Needle := ';' + Uppercase(DirValue) + ';';
-  Result := Pos(Needle, NormalizedPath) > 0;
+  PaddedPath := ';' + Uppercase(PathValue) + ';';
+  PaddedDir := ';' + Uppercase(DirValue) + ';';
+  Result := Pos(PaddedDir, PaddedPath) > 0;
 end;
 
 function RemovePathEntry(PathValue, DirValue: string): string;
 var
-  Parts: TArrayOfString;
-  I: Integer;
-  OutValue: string;
+  WorkValue: string;
+  Entry: string;
+  P: Integer;
 begin
-  OutValue := '';
-  StringChangeEx(PathValue, #13, '', True);
-  StringChangeEx(PathValue, #10, '', True);
+  Result := '';
+  WorkValue := PathValue;
 
-  Parts := SplitString(PathValue, ';');
-  for I := 0 to GetArrayLength(Parts) - 1 do
+  StringChangeEx(WorkValue, #13, '', True);
+  StringChangeEx(WorkValue, #10, '', True);
+
+  while Length(WorkValue) > 0 do
   begin
-    if (Trim(Parts[I]) <> '') and (CompareText(Trim(Parts[I]), DirValue) <> 0) then
+    P := Pos(';', WorkValue);
+    if P > 0 then
     begin
-      if OutValue <> '' then
-        OutValue := OutValue + ';';
-      OutValue := OutValue + Trim(Parts[I]);
+      Entry := Copy(WorkValue, 1, P - 1);
+      Delete(WorkValue, 1, P);
+    end
+    else
+    begin
+      Entry := WorkValue;
+      WorkValue := '';
+    end;
+
+    Entry := Trim(Entry);
+
+    if (Entry <> '') and (CompareText(Entry, DirValue) <> 0) then
+    begin
+      if Result <> '' then
+        Result := Result + ';';
+      Result := Result + Entry;
     end;
   end;
-  Result := OutValue;
 end;
 
 procedure AddDirToPathIfNeeded(DirValue: string);
